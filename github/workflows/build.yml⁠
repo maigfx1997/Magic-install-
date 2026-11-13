@@ -1,0 +1,19 @@
+name: Build IPA
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and Fake-Sign
+        run: |
+          mkdir -p Payload/MagicInstaller.app
+          swiftc TSInstaller.swift amfi_trustcache.c -o Payload/MagicInstaller.app/MagicInstaller -target arm64-apple-ios14.0
+          brew install ldid
+          ldid -S"troll_ent.xml" Payload/MagicInstaller.app/
+          zip -r9 MagicInstaller.ipa Payload/
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: MagicInstaller-IPA
+          path: MagicInstaller.ipa
